@@ -1,0 +1,11 @@
+Date,Description,Amount,Category,Type,Payment Method,Account,Notes
+2024-03-15,Client Payment,1500.0,Sales,income,bank transfer,Bank,March Invoice
+2024-03-16,Office Supplies,-125.5,Supplies,expense,credit card,Credit,Printer paper
+2024-03-17,Utilities,-200.0,Utilities,expense,debit card,Bank,Electricity bill
+2024-03-18,Store Purchase,-50.0,Supplies,expense,cash,Cash,Office snacks
+2024-03-19,Freelance Income,750.0,Freelance,income,check,Bank,Project X Payment
+2024-03-20,Internet Bill,-100.0,Utilities,expense,bank transfer,Bank,March Internet Bill
+2024-03-21,Software Subscription,-29.99,Subscriptions,expense,credit card,Credit,Cloud Storage
+2024-03-22,Dinner with Client,-80.0,Entertainment,expense,debit card,Bank,Business Dinner
+2024-03-23,Advertising Fee,-150.0,Marketing,expense,bank transfer,Bank,Facebook Ads
+2024-03-24,Bonus Payment,500.0,Salary,income,bank transfer,Bank,Performance Bonus

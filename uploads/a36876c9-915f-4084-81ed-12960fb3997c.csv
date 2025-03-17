@@ -1,0 +1,5 @@
+Date,Description,Amount,Category,Type,Payment Method,Account,Notes
+2024-03-15,Client Payment,1500.00,Sales,income,bank transfer,Bank,March Invoice
+2024-03-16,Office Supplies,-125.50,Supplies,expense,credit card,Credit,Printer paper
+2024-03-17,Utilities,-200.00,Utilities,expense,debit card,Bank,Electricity bill
+2024-03-18,Store Purchase,-50.00,Supplies,expense,cash,Cash,Office snacks

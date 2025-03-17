@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bio           String?
+  company       String?
+  image         String?
+  role          String?
+  notifications Notification[]
+  reports       Report[]
+  business      Business?
+  settings      UserSettings?
+
+  @@map("users")
+}
+
+model Business {
+  id                String             @id @default(cuid())
+  name              String
+  industry          String
+  registrationNo    String?
+  taxId             String?
+  currency          String             @default("USD")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  userId            String             @unique
+  aiInsights        AIInsights[]
+  financialPosition FinancialPosition?
+  reports           Report[]
+  assets            Asset[]
+  bankStatements    BankStatement[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equityDetails     EquityDetail[]
+  financialGoals    FinancialGoal[]
+  liabilities       Liability[]
+  transactions      Transaction[]
+  bankStatementTransactions BankStatementTransaction[]
+
+  @@map("businesses")
+}
+
+model UserSettings {
+  id                  String   @id @default(cuid())
+  theme               String   @default("light")
+  emailNotifications  Boolean  @default(true)
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Asset {
+  id           String    @id @default(cuid())
+  name         String
+  type         String
+  value        Float
+  purchaseDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("assets")
+}
+
+model Liability {
+  id         String    @id @default(cuid())
+  name       String
+  type       String
+  amount     Float
+  dueDate    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("liabilities")
+}
+
+model EquityDetail {
+  id          String   @id @default(cuid())
+  type        String
+  amount      Float
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("equity_details")
+}
+
+model FinancialGoal {
+  id            String   @id @default(cuid())
+  title         String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime
+  status        String   @default("IN_PROGRESS")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("financial_goals")
+}
+
+model Transaction {
+  id              String         @id @default(cuid())
+  type            String
+  amount          Float
+  description     String
+  createdAt       DateTime       @default(now())
+  businessId      String
+  category        String
+  date            DateTime
+  updatedAt       DateTime       @updatedAt
+  accountType     String
+  aiConfidence    Float?
+  bankStatementId String?
+  notes           String?
+  bankStatement   BankStatement? @relation(fields: [bankStatementId], references: [fileName])
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model BankStatement {
+  id              String        @id @default(cuid())
+  fileName        String        @unique
+  originalName    String
+  status          String        @default("pending")
+  businessId      String
+  date            DateTime
+  balance         Float
+  currency        String
+  accountId       String
+  statementNumber String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+
+  @@map("bank_statements")
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  data       Json
+  businessId String
+  userId     String
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  timestamp DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model FinancialPosition {
+  id                  String   @id @default(cuid())
+  businessId          String   @unique
+  currentAssets       Float    @default(0)
+  fixedAssets         Float    @default(0)
+  currentLiabilities  Float    @default(0)
+  longTermLiabilities Float    @default(0)
+  commonStock         Float    @default(0)
+  retainedEarnings    Float    @default(0)
+  totalAssets         Float    @default(0)
+  totalLiabilities    Float    @default(0)
+  totalEquity         Float    @default(0)
+  netWorth            Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  business            Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model AIInsights {
+  id              String   @id @default(cuid())
+  businessId      String
+  insights        Json[]
+  recommendations Json[]
+  riskFactors     Json[]
+  opportunities   Json[]
+  summary         Json
+  metadata        Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  business        Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model BankStatementTransaction {
+  id          String   @id @default(cuid())
+  date        DateTime
+  name        String   // Changed from description
+  income      Float    @default(0)
+  expense     Float    @default(0)
+  balance     Float
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+}
