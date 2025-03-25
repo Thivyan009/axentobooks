@@ -1,16 +1,21 @@
-export type TransactionStatus = "Success" | "Processing" | "Failed"
-export type TransactionType = "expense" | "income"
-export type AccountType = "cash" | "bank" | "credit"
+export type TransactionType = "INCOME" | "EXPENSE"
+export type AccountType = "CASH" | "BANK" | "CREDIT"
+export type TransactionStatus = "Processing" | "Completed" | "Failed"
 
 export interface Transaction {
   id: string
-  name: string
   type: TransactionType
-  account: AccountType
-  category: string
   amount: number
+  description: string
+  createdAt: string
+  businessId: string
+  category: string
   date: string
-  status: TransactionStatus
+  updatedAt: string
+  accountType: AccountType
+  aiConfidence?: number
+  bankStatementId?: string
+  notes?: string
 }
 
 export interface TransactionFilters {

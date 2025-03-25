@@ -66,7 +66,7 @@ export async function getTransactions() {
       type: t.type.toLowerCase() as "expense" | "income",
       account: t.accountType.toLowerCase() as "cash" | "bank" | "credit",
       category: t.category,
-      amount: Number(t.amount),
+      amount: t.type.toLowerCase() === "expense" ? -Number(t.amount) : Number(t.amount),
       description: t.description,
       date: t.date.toISOString(),
       status: "Completed" as const,
@@ -273,7 +273,147 @@ export async function deleteTransactions(ids: string[]) {
   }
 }
 
-export async function getFinancialMetrics() {
+export async function getFinancialMetrics(): Promise<{ metrics: FinancialMetrics; error?: string }> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { metrics: {} as FinancialMetrics, error: "Not authenticated" }
+    }
+
+    // Get business ID from user
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { business: true },
+    })
+
+    if (!user?.business?.id) {
+      return { metrics: {} as FinancialMetrics, error: "Business not found" }
+    }
+
+    // Get current date range
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+
+    // Get previous month's date range
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    // Get current month transactions
+    const currentMonthTransactions = await prisma.transaction.findMany({
+      where: {
+        businessId: user.business.id,
+        date: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+      select: {
+        amount: true,
+        type: true,
+      },
+    })
+
+    // Get previous month transactions
+    const prevMonthTransactions = await prisma.transaction.findMany({
+      where: {
+        businessId: user.business.id,
+        date: {
+          gte: startOfPrevMonth,
+          lte: endOfPrevMonth,
+        },
+      },
+      select: {
+        amount: true,
+        type: true,
+      },
+    })
+
+    // Calculate current month metrics
+    const currentRevenue = currentMonthTransactions
+      .filter(t => t.type === "INCOME")
+      .reduce((sum, t) => sum + Number(t.amount), 0)
+
+    const currentExpenses = currentMonthTransactions
+      .filter(t => t.type === "EXPENSE")
+      .reduce((sum, t) => sum + Number(t.amount), 0)
+
+    const currentCashFlow = currentRevenue - currentExpenses
+
+    // Calculate previous month metrics
+    const prevRevenue = prevMonthTransactions
+      .filter(t => t.type === "INCOME")
+      .reduce((sum, t) => sum + Number(t.amount), 0)
+
+    const prevExpenses = prevMonthTransactions
+      .filter(t => t.type === "EXPENSE")
+      .reduce((sum, t) => sum + Number(t.amount), 0)
+
+    // Calculate growth percentages
+    const revenueGrowth = prevRevenue > 0 
+      ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 
+      : 0
+
+    const expenseGrowth = prevExpenses > 0 
+      ? ((currentExpenses - prevExpenses) / prevExpenses) * 100 
+      : 0
+
+    // Calculate profit margin
+    const profitMargin = currentRevenue > 0 
+      ? (currentCashFlow / currentRevenue) * 100 
+      : 0
+
+    // Calculate expense ratio
+    const expenseRatio = currentRevenue > 0 
+      ? (currentExpenses / currentRevenue) * 100 
+      : 0
+
+    // Calculate average transaction value
+    const avgTransactionValue = currentMonthTransactions.length > 0
+      ? currentMonthTransactions.reduce((sum, t) => sum + Number(t.amount), 0) / currentMonthTransactions.length
+      : 0
+
+    // Calculate transaction frequency
+    const daysInMonth = endOfMonth.getDate()
+    const transactionFrequency = currentMonthTransactions.length / daysInMonth
+
+    // Calculate cash flow trend
+    const cashFlowTrend = currentCashFlow > 0 ? "positive" : "negative"
+
+    // Calculate financial health score (0-100)
+    const healthScore = Math.min(100, Math.max(0,
+      (profitMargin * 0.4) + // 40% weight on profit margin
+      ((100 - expenseRatio) * 0.3) + // 30% weight on expense ratio
+      (Math.min(transactionFrequency * 10, 30)) // 30% weight on transaction frequency
+    ))
+
+    return {
+      metrics: {
+        totalRevenue: currentRevenue,
+        totalExpenses: currentExpenses,
+        cashFlow: currentCashFlow,
+        revenueGrowth,
+        expenseGrowth,
+        profitMargin,
+        expenseRatio,
+        avgTransactionValue,
+        transactionFrequency,
+        cashFlowTrend,
+        healthScore,
+        periodStart: startOfMonth,
+        periodEnd: endOfMonth,
+      },
+    }
+  } catch (error) {
+    console.error("Error getting financial metrics:", error)
+    return { 
+      metrics: {} as FinancialMetrics, 
+      error: error instanceof Error ? error.message : "Failed to get financial metrics" 
+    }
+  }
+}
+
+export async function getTransactionById(id: string) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -282,136 +422,110 @@ export async function getFinancialMetrics() {
 
     const business = await prisma.business.findUnique({
       where: { userId: session.user.id },
-      include: {
-        financialPosition: true
-      }
     })
 
     if (!business) {
       return { error: "Business not found" }
     }
 
-    // Get current period transactions (current month)
-    const now = new Date()
-    const currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    
-    const currentTransactions = await prisma.transaction.findMany({
-      where: { 
+    const transaction = await prisma.transaction.findFirst({
+      where: {
+        id,
         businessId: business.id,
-        date: {
-          gte: currentPeriodStart,
-          lte: now
-        }
       },
-      select: {
-        type: true,
-        amount: true,
-        category: true
-      }
-    })
-    
-    // Get previous period transactions (last month)
-    const previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0)
-    
-    const previousTransactions = await prisma.transaction.findMany({
-      where: { 
-        businessId: business.id,
-        date: {
-          gte: previousPeriodStart,
-          lte: previousPeriodEnd
-        }
-      },
-      select: {
-        type: true,
-        amount: true
-      }
     })
 
-    // Calculate current period metrics
-    const currentRevenue = currentTransactions
-      .filter(t => t.type.toUpperCase() === "INCOME")
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-    
-    const currentExpenses = currentTransactions
-      .filter(t => t.type.toUpperCase() === "EXPENSE")
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-
-    // Calculate previous period metrics
-    const previousRevenue = previousTransactions
-      .filter(t => t.type.toUpperCase() === "INCOME")
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-    
-    const previousExpenses = previousTransactions
-      .filter(t => t.type.toUpperCase() === "EXPENSE")
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-
-    // Calculate growth rates
-    const revenueGrowth = previousRevenue > 0 
-      ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 
-      : currentRevenue > 0 ? 100 : 0
-
-    const expenseGrowth = previousExpenses > 0 
-      ? ((currentExpenses - previousExpenses) / previousExpenses) * 100 
-      : currentExpenses > 0 ? 100 : 0
-
-    // Get financial position metrics
-    const financialPosition = business.financialPosition || {
-      currentAssets: 0,
-      fixedAssets: 0,
-      currentLiabilities: 0,
-      longTermLiabilities: 0,
-      commonStock: 0,
-      retainedEarnings: 0
+    if (!transaction) {
+      return { error: "Transaction not found" }
     }
 
-    // Calculate operational metrics
-    const operationalExpenses = currentTransactions
-      .filter(t => t.type.toUpperCase() === "EXPENSE" && t.category !== "Capital Expenditure")
-      .reduce((sum, t) => sum + Number(t.amount), 0)
-
-    const cashFlow = currentRevenue - currentExpenses
-    
-    // Log the calculations for debugging
-    console.log("Financial Metrics Calculation:", {
-      currentPeriod: {
-        start: currentPeriodStart,
-        end: now,
-        revenue: currentRevenue,
-        expenses: currentExpenses,
-        cashFlow
-      },
-      previousPeriod: {
-        start: previousPeriodStart,
-        end: previousPeriodEnd,
-        revenue: previousRevenue,
-        expenses: previousExpenses
-      },
-      growth: {
-        revenue: revenueGrowth,
-        expenses: expenseGrowth
-      }
-    })
-    
-    return { 
-      metrics: {
-        totalRevenue: currentRevenue,
-        totalExpenses: currentExpenses,
-        revenueGrowth,
-        expenseGrowth,
-        operationalExpenses,
-        cashFlow,
-        currentAssets: Number(financialPosition.currentAssets),
-        fixedAssets: Number(financialPosition.fixedAssets),
-        currentLiabilities: Number(financialPosition.currentLiabilities),
-        longTermLiabilities: Number(financialPosition.longTermLiabilities),
-        commonStock: Number(financialPosition.commonStock),
-        retainedEarnings: Number(financialPosition.retainedEarnings)
+    return {
+      transaction: {
+        id: transaction.id,
+        name: transaction.description,
+        type: transaction.type.toLowerCase() as "expense" | "income",
+        account: transaction.accountType.toLowerCase() as "cash" | "bank" | "credit",
+        category: transaction.category,
+        amount: Number(transaction.amount),
+        description: transaction.description,
+        date: transaction.date.toISOString(),
+        status: "Completed" as const,
       }
     }
   } catch (error) {
-    console.error("Failed to calculate metrics:", error)
-    return { error: "Failed to calculate metrics" }
+    console.error("Failed to get transaction:", error)
+    return { error: "Failed to get transaction" }
+  }
+}
+
+export async function updateTransaction(data: {
+  id: string
+  description: string
+  amount: number
+  type: string
+  category: string
+  account: string
+  date: Date
+}) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { error: "Unauthorized" }
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { userId: session.user.id },
+    })
+
+    if (!business) {
+      return { error: "Business not found" }
+    }
+
+    // Verify transaction belongs to business
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        id: data.id,
+        businessId: business.id,
+      },
+    })
+
+    if (!existingTransaction) {
+      return { error: "Transaction not found" }
+    }
+
+    const transaction = await prisma.transaction.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        description: data.description,
+        amount: data.amount,
+        type: data.type.toUpperCase(),
+        category: data.category,
+        accountType: data.account.toUpperCase(),
+        date: data.date,
+      },
+    })
+
+    revalidatePath("/transactions")
+    revalidatePath("/dashboard")
+
+    return {
+      transaction: {
+        id: transaction.id,
+        name: transaction.description,
+        type: transaction.type.toLowerCase() as "expense" | "income",
+        account: transaction.accountType.toLowerCase() as "cash" | "bank" | "credit",
+        category: transaction.category,
+        amount: Number(transaction.amount),
+        description: transaction.description,
+        date: transaction.date.toISOString(),
+        status: "Completed" as const,
+      }
+    }
+  } catch (error) {
+    console.error("Failed to update transaction:", error)
+    return { error: "Failed to update transaction" }
   }
 }
 

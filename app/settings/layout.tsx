@@ -1,7 +1,17 @@
-import type React from "react"
-import { SettingsLayout } from "@/components/settings/settings-layout"
+import { PageLayout } from "@/components/layouts/page-layout"
+import type { ReactNode } from "react"
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <SettingsLayout>{children}</SettingsLayout>
+interface SettingsLayoutProps {
+  children: ReactNode
+}
+
+export default function SettingsLayout({ children }: SettingsLayoutProps) {
+  return (
+    <PageLayout>
+      <div className="container mx-auto max-w-5xl p-6">
+        {children}
+      </div>
+    </PageLayout>
+  )
 }
 

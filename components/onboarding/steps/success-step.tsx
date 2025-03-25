@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { toast } from "@/components/ui/use-toast"
 import type { FormData } from "../onboarding-form"
+import { useCurrencyStore } from "@/lib/store/currency-store"
+import { formatCurrency } from "@/lib/types/currency"
 
 interface SuccessStepProps {
   onComplete: () => void
@@ -22,6 +24,7 @@ export function SuccessStep({ onComplete, onBack, formData }: SuccessStepProps) 
   const [countdown, setCountdown] = useState(5)
   const router = useRouter()
   const { data: session } = useSession()
+  const { selectedCurrency } = useCurrencyStore()
 
   const handleComplete = useCallback(async () => {
     if (!session?.user?.id) {
@@ -104,19 +107,19 @@ export function SuccessStep({ onComplete, onBack, formData }: SuccessStepProps) 
             <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/30">
               <div className="text-sm font-medium text-green-700 dark:text-green-300">Total Assets</div>
               <div className="mt-1 text-2xl font-bold text-green-700 dark:text-green-300">
-                ${totalAssets.toLocaleString()}
+                {formatCurrency(totalAssets, selectedCurrency.code)}
               </div>
             </div>
             <div className="rounded-lg bg-red-50 p-4 dark:bg-red-950/30">
               <div className="text-sm font-medium text-red-700 dark:text-red-300">Total Liabilities</div>
               <div className="mt-1 text-2xl font-bold text-red-700 dark:text-red-300">
-                ${totalLiabilities.toLocaleString()}
+                {formatCurrency(totalLiabilities, selectedCurrency.code)}
               </div>
             </div>
             <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
               <div className="text-sm font-medium text-blue-700 dark:text-blue-300">Total Equity</div>
               <div className="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300">
-                ${totalEquity.toLocaleString()}
+                {formatCurrency(totalEquity, selectedCurrency.code)}
               </div>
             </div>
           </div>

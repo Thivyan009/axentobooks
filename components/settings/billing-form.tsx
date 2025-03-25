@@ -28,7 +28,7 @@ export function BillingForm() {
               <h3 className="font-medium">Free Plan</h3>
               <p className="text-sm text-muted-foreground">Basic features for small businesses</p>
             </div>
-            <Button onClick={handleUpgrade}>Upgrade</Button>
+            <Button disabled>Upgrade</Button>
           </div>
           <div className="rounded-lg border">
             <div className="p-6">
@@ -40,7 +40,7 @@ export function BillingForm() {
                   <p className="text-sm font-medium">No payment method added</p>
                   <p className="text-sm text-muted-foreground">Add a card to enable automatic payments</p>
                 </div>
-                <Button variant="outline">Add Payment Method</Button>
+                <Button variant="outline" disabled>Add Payment Method</Button>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Calculator, Calendar, CreditCard, Search, Settings, User } from "lucide-react"
+import { Calculator, Calendar, CreditCard, Search, Settings, User, FileSpreadsheet } from "lucide-react"
 
 import {
   CommandDialog,
@@ -12,8 +12,10 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
+import { DialogTitle } from "@/components/ui/dialog"
 
 export function CommandMenu() {
   const [open, setOpen] = React.useState(false)
@@ -49,6 +51,7 @@ export function CommandMenu() {
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
+        <DialogTitle className="sr-only">Search Commands</DialogTitle>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
@@ -70,6 +73,16 @@ export function CommandMenu() {
             >
               <Calendar className="mr-2 h-4 w-4" />
               Reports
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Spreadsheets">
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/spreadsheets"))}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Spreadsheet Formats
+              <CommandShortcut className="text-xs text-muted-foreground ml-2">(Case Sensitive)</CommandShortcut>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />

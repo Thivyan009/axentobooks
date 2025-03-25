@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { BarChart3, Building2, ChevronDown, FileText, LayoutDashboard, Receipt, Settings, Sparkles, Calendar } from "lucide-react"
+import { BarChart3, Building2, ChevronDown, FileText, LayoutDashboard, Receipt, Settings, Calendar, FileSpreadsheet, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -11,7 +11,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { BusinessName } from "@/components/layouts/business-name"
+import { Suspense } from "react"
 
 const navigation = [
   {
@@ -30,6 +33,11 @@ const navigation = [
     icon: Receipt,
   },
   {
+    name: "Invoices",
+    href: "/invoices",
+    icon: FileSpreadsheet,
+  },
+  {
     name: "Calendar",
     href: "/calendar",
     icon: Calendar,
@@ -40,14 +48,14 @@ const navigation = [
     icon: FileText,
   },
   {
-    name: "AI Assistant",
-    href: "/ai",
-    icon: Sparkles,
-  },
-  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    name: "Beta Feedback",
+    href: "/feedback",
+    icon: MessageSquare,
   },
 ]
 
@@ -56,18 +64,20 @@ export function PageSidebar() {
 
   return (
     <Sidebar collapsible="none" className="w-64">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-6 w-6" />
-          <div className="flex flex-col">
-            <span className="font-semibold">ASTA Inc.</span>
-            <span className="text-xs text-muted-foreground">Enterprise</span>
+      <SidebarHeader className="p-4">
+        <Suspense fallback={
+          <div className="flex items-center gap-2">
+            <Building2 className="h-6 w-6" />
+            <div>
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="mt-1 h-3 w-16 animate-pulse rounded bg-muted" />
+            </div>
           </div>
-          <Button variant="ghost" size="icon" className="ml-auto">
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </div>
+        }>
+          <BusinessName />
+        </Suspense>
       </SidebarHeader>
+      <SidebarSeparator />
       <SidebarContent>
         <SidebarMenu>
           {navigation.map((item) => (

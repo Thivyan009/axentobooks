@@ -103,10 +103,10 @@ const columns: ColumnDef<Transaction>[] = [
       )
     },
     cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue("amount"))
-      const type = row.original.type
+      const amount = Number(row.getValue("amount"))
+      const type = row.original.type.toLowerCase()
       const { selectedCurrency } = useCurrencyStore()
-      const formatted = formatCurrency(amount, selectedCurrency.code)
+      const formatted = formatCurrency(Math.abs(amount), selectedCurrency.code)
 
       return (
         <div className={type === "income" ? "text-green-500" : "text-red-500"}>

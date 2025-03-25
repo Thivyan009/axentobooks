@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { notify } from "@/lib/notifications"
 import type { Liability } from "@/lib/types/onboarding"
+import { useCurrencyStore } from "@/lib/store/currency-store"
+import { formatCurrency } from "@/lib/types/currency"
 
 const LIABILITY_TYPES = [
   {
@@ -64,6 +66,7 @@ export function LiabilitiesStep({
 }: LiabilitiesStepProps) {
   const [liabilities, setLiabilities] = useState<Liability[]>(form.getValues().liabilities || [])
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const { selectedCurrency } = useCurrencyStore()
 
   const validateLiability = (liability: Liability, index: number) => {
     const newErrors: { [key: string]: string } = {}
@@ -234,7 +237,7 @@ export function LiabilitiesStep({
               <span className="font-medium text-red-700 dark:text-red-300">Total Liabilities</span>
             </div>
             <div className="text-xl font-bold text-red-700 dark:text-red-300">
-              ${totalLiabilitiesAmount.toLocaleString()}
+              {formatCurrency(totalLiabilitiesAmount, selectedCurrency.code)}
             </div>
           </div>
         </div>
@@ -343,7 +346,7 @@ export function LiabilitiesStep({
                   </Tooltip>
                 </TooltipProvider>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{selectedCurrency.symbol}</span>
                   <Input
                     type="number"
                     placeholder="0.00"

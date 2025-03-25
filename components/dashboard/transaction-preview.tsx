@@ -72,7 +72,7 @@ export function TransactionPreview({
         <DialogHeader>
           <DialogTitle>Review Transactions</DialogTitle>
           <DialogDescription>
-            Review and select the transactions you want to import. Uncheck any transactions you don't want to import.
+            Review and select the transactions you want to import. Uncheck any transactions you don't want to import. Note: Transaction types (income/expense) are case-sensitive.
           </DialogDescription>
         </DialogHeader>
         
@@ -94,11 +94,11 @@ export function TransactionPreview({
             </TableHeader>
             <TableBody>
               {selectedTransactions.map((transaction, index) => {
-                const amount = parseFloat(transaction.Amount.replace(/[$,]/g, ''))
+                const amount = Number.parseFloat(transaction.Amount.replace(/[$,]/g, ''))
                 const type = amount < 0 ? "expense" : "income"
                 
                 return (
-                  <TableRow key={index}>
+                  <TableRow key={`transaction-${transaction.Date}-${transaction.Description}-${transaction.Amount}`}>
                     <TableCell>
                       <Checkbox
                         checked={transaction.selected}

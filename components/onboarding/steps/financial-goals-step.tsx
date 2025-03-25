@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import type { FinancialGoal } from "@/lib/types/onboarding"
+import { useCurrencyStore } from "@/lib/store/currency-store"
 
 const GOAL_TYPES = [
   {
@@ -81,6 +82,7 @@ export function FinancialGoalsStep({ form, onNext, onBack, formData, updateFormD
   const [goals, setGoals] = useState<FinancialGoal[]>(form.getValues().financialGoals || [])
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const { toast } = useToast()
+  const { selectedCurrency } = useCurrencyStore()
 
   const validateGoal = (goal: FinancialGoal, index: number) => {
     const newErrors: { [key: string]: string } = {}
@@ -312,7 +314,7 @@ export function FinancialGoalsStep({ form, onNext, onBack, formData, updateFormD
                     </Tooltip>
                   </TooltipProvider>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{selectedCurrency.symbol}</span>
                     <Input
                       type="number"
                       placeholder="0.00"

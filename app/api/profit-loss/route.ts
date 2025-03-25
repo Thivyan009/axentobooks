@@ -3,7 +3,45 @@ import type { NextRequest } from "next/server"
 import { z } from "zod"
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const apiKey = process.env.GEMINI_API_KEY
+if (!apiKey) {
+  throw new Error("GEMINI_API_KEY is not configured in environment variables")
+}
+const genAI = new GoogleGenerativeAI(apiKey)
+
+// Define types for the AI response
+interface PLItem {
+  description: string
+  amount: number
+}
+
+interface PLCategory {
+  category: string
+  amount: number
+  items: PLItem[]
+}
+
+interface PLSummary {
+  totalRevenue: number
+  totalExpenses: number
+  netProfitLoss: number
+  profitMargin: number
+  monthOverMonthGrowth: number
+}
+
+interface PLAnalysis {
+  insights: string[]
+  recommendations: string[]
+  riskFactors: string[]
+  opportunities: string[]
+}
+
+interface PLResponse {
+  revenue: PLCategory[]
+  expenses: PLCategory[]
+  summary: PLSummary
+  analysis?: PLAnalysis
+}
 
 // Validation schema for request
 const requestSchema = z.object({
@@ -125,33 +163,94 @@ export async function POST(req: NextRequest) {
     const response = result.response
     const text = response.text()
 
+    console.log("Raw AI response:", text)
+
+    // Clean up the response text
+    const cleanedText = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/^\s*\[?\s*\{/, '{') // Remove any leading array brackets or whitespace
+      .replace(/\}\s*\]?\s*$/, '}') // Remove any trailing array brackets or whitespace
+      .trim()
+
+    console.log("Cleaned text:", cleanedText)
+
     // Extract and parse JSON response
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("Invalid AI response format")
+    let parsedResponse: PLResponse
+    try {
+      // Try to find JSON object in the text if it's wrapped in other content
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        parsedResponse = JSON.parse(jsonMatch[0])
+      } else {
+        parsedResponse = JSON.parse(cleanedText)
+      }
+      console.log("Successfully parsed response:", parsedResponse)
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError)
+      console.error("Failed to parse text:", cleanedText)
+      // Try to provide more helpful error message
+      if (cleanedText.includes("```")) {
+        throw new Error("AI response contains markdown code blocks. Please try again.")
+      }
+      if (!cleanedText.includes("{")) {
+        throw new Error("AI response is not in JSON format. Please try again.")
+      }
+      throw new Error("Failed to parse AI response. Please try again.")
     }
 
-    const parsedResponse = JSON.parse(jsonMatch[0])
+    // Validate required fields
+    if (!parsedResponse.revenue || !parsedResponse.expenses || !parsedResponse.summary) {
+      console.error("Missing required fields in response:", parsedResponse)
+      throw new Error("Invalid response structure from AI")
+    }
 
     // Validate the response structure
     const validatedResponse = {
-      ...parsedResponse,
       periodStart: startDate,
       periodEnd: endDate,
+      revenue: parsedResponse.revenue.map((rev: PLCategory) => ({
+        category: rev.category || "Uncategorized",
+        amount: Number(rev.amount) || 0,
+        items: (rev.items || []).map((item: PLItem) => ({
+          description: item.description || "No description",
+          amount: Number(item.amount) || 0
+        }))
+      })),
+      expenses: parsedResponse.expenses.map((exp: PLCategory) => ({
+        category: exp.category || "Uncategorized",
+        amount: Number(exp.amount) || 0,
+        items: (exp.items || []).map((item: PLItem) => ({
+          description: item.description || "No description",
+          amount: Number(item.amount) || 0
+        }))
+      })),
       summary: {
-        ...parsedResponse.summary,
-        totalRevenue: Number(parsedResponse.summary.totalRevenue.toFixed(2)),
-        totalExpenses: Number(parsedResponse.summary.totalExpenses.toFixed(2)),
-        netProfitLoss: Number(parsedResponse.summary.netProfitLoss.toFixed(2)),
-        profitMargin: Number(parsedResponse.summary.profitMargin.toFixed(2)),
-        monthOverMonthGrowth: Number(parsedResponse.summary.monthOverMonthGrowth.toFixed(2)),
+        totalRevenue: Number((parsedResponse.summary.totalRevenue || 0).toFixed(2)),
+        totalExpenses: Number((parsedResponse.summary.totalExpenses || 0).toFixed(2)),
+        netProfitLoss: Number((parsedResponse.summary.netProfitLoss || 0).toFixed(2)),
+        profitMargin: Number((parsedResponse.summary.profitMargin || 0).toFixed(2)),
+        monthOverMonthGrowth: Number((parsedResponse.summary.monthOverMonthGrowth || 0).toFixed(2)),
       },
+      analysis: {
+        insights: parsedResponse.analysis?.insights || ["No insights available"],
+        recommendations: parsedResponse.analysis?.recommendations || ["No recommendations available"],
+        riskFactors: parsedResponse.analysis?.riskFactors || ["No risk factors identified"],
+        opportunities: parsedResponse.analysis?.opportunities || ["No opportunities identified"]
+      }
     }
 
+    console.log("Final validated response:", validatedResponse)
     return Response.json(validatedResponse)
   } catch (error) {
     console.error("P&L Generation Error:", error)
-    return Response.json({ error: "Failed to generate profit/loss statement" }, { status: 500 })
+    if (error instanceof Error) {
+      console.error("Error details:", error.message)
+      console.error("Error stack:", error.stack)
+    }
+    return Response.json({ 
+      error: error instanceof Error ? error.message : "Failed to generate profit/loss statement" 
+    }, { status: 500 })
   }
 }
 

@@ -4,6 +4,15 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { categorizeTransaction, updateFinancialPosition } from "@/lib/actions/reports"
 import { auth } from "@/lib/auth"
+import { analyzeTransaction, updateFinancialStatements } from "@/lib/actions/transaction-analysis"
+
+interface TransactionRequest {
+  date: string
+  type: string
+  amount: number
+  category: string
+  description: string
+}
 
 export async function GET(req: Request) {
   try {
@@ -13,8 +22,8 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = Number.parseInt(searchParams.get('page') || '1', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
     const type = searchParams.get('type');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -67,8 +76,8 @@ export async function GET(req: Request) {
         limit
       }
     });
-  } catch (error) {
-    console.error('Transactions Error:', error);
+  } catch (error: unknown) {
+    console.error('[TRANSACTIONS_GET] Error details:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -93,7 +102,7 @@ export async function POST(req: Request) {
     }
 
     // Get transaction details from request
-    const { date, type, amount, category, description } = await req.json()
+    const { date, type, amount, category, description } = await req.json() as TransactionRequest
     console.log("Creating transaction with data:", { date, type, amount, category, description })
 
     // Create transaction record
@@ -105,36 +114,56 @@ export async function POST(req: Request) {
         category,
         description,
         businessId: business.id,
-        userId: session.user.id,
+        accountType: "cash", // Default account type
       },
     })
     console.log("Transaction created successfully:", transaction)
 
-    // Send transaction to Gemini AI for categorization
-    console.log("Sending transaction to Gemini AI for categorization...")
-    const aiCategory = await categorizeTransaction({
-      date: new Date(date),
-      type,
-      amount,
-      category,
-      description,
-    })
-    console.log("AI Categorization result:", aiCategory)
+    // Analyze transaction using Gemini AI
+    console.log("Analyzing transaction with Gemini AI...")
+    try {
+      const analysis = await analyzeTransaction({
+        date: new Date(date),
+        type,
+        amount,
+        category,
+        description,
+      })
+      console.log("AI Analysis result:", analysis)
 
-    // Update financial position based on AI categorization
-    console.log("Updating financial position...")
-    const updateResult = await updateFinancialPosition(business.id, {
-      date: new Date(date),
-      type,
-      amount,
-      category,
-      description,
-    }, aiCategory)
-    console.log("Financial position update result:", updateResult)
+      // Update transaction with AI analysis results
+      const updatedTransaction = await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          aiConfidence: analysis.confidence,
+          notes: analysis.description,
+        },
+      })
+      console.log("Transaction updated with AI analysis:", updatedTransaction)
 
-    return NextResponse.json(transaction)
-  } catch (error) {
+      // Update financial statements based on analysis
+      console.log("Updating financial statements...")
+      await updateFinancialStatements(business.id, {
+        id: transaction.id,
+        date: new Date(date),
+        type,
+        amount,
+        category,
+        description,
+      }, analysis)
+      console.log("Financial statements updated successfully")
+
+      return NextResponse.json(updatedTransaction)
+    } catch (analysisError) {
+      console.error("Error during transaction analysis:", analysisError)
+      // Still return the created transaction even if analysis fails
+      return NextResponse.json(transaction)
+    }
+  } catch (error: unknown) {
     console.error("[TRANSACTIONS_POST] Error details:", error)
+    if (error instanceof Error) {
+      console.error("Error stack trace:", error.stack)
+    }
     return new NextResponse("Internal Error", { status: 500 })
   }
 } 

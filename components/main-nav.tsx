@@ -2,7 +2,16 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building2, ChevronDown, LayoutDashboard, LineChart, Receipt, Settings, Sparkles } from "lucide-react"
+import { 
+  Building2, 
+  ChevronDown, 
+  LayoutDashboard, 
+  LineChart, 
+  Receipt, 
+  Settings, 
+  Calendar,
+  FileText,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -30,14 +39,19 @@ const navigation = [
     icon: Receipt,
   },
   {
-    name: "Reports",
-    href: "/reports",
-    icon: LineChart,
+    name: "Calendar",
+    href: "/calendar",
+    icon: Calendar,
   },
   {
-    name: "Axento Intelligence",
-    href: "/ai",
-    icon: Sparkles,
+    name: "Reports",
+    href: "/reports",
+    icon: FileText,
+  },
+  {
+    name: "Invoices",
+    href: "/invoices",
+    icon: FileText,
   },
   {
     name: "Settings",
@@ -51,16 +65,8 @@ export function MainNav() {
 
   return (
     <Sidebar collapsible="none" className="w-64">
-      <SidebarHeader className="border-b p-4">
+      <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <Building2 className="h-6 w-6" />
-          <div className="flex flex-col">
-            <span className="font-semibold">ASTA Inc.</span>
-            <span className="text-xs text-muted-foreground">Enterprise</span>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto">
-            <ChevronDown className="h-4 w-4" />
-          </Button>
         </div>
       </SidebarHeader>
       <SidebarContent>

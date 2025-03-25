@@ -115,12 +115,91 @@ export async function searchTransactions(businessId: string, params: SearchParam
 }
 
 export async function getFinancialData(businessId: string): Promise<FinancialData> {
-  // Fetch financial position
-  const financialPosition = await prisma.financialPosition.findUnique({
-    where: { businessId }
-  })
+  try {
+    // Fetch financial position
+    const financialPosition = await prisma.financialPosition.findUnique({
+      where: { businessId }
+    })
 
-  if (!financialPosition) {
+    // Return default empty state if no financial position exists
+    if (!financialPosition) {
+      return {
+        assets: {
+          total: 0,
+          items: []
+        },
+        liabilities: {
+          total: 0,
+          items: []
+        },
+        equity: {
+          total: 0,
+          items: []
+        }
+      }
+    }
+
+    // Transform the data to match the expected format
+    return {
+      assets: {
+        total: financialPosition.totalAssets,
+        items: [
+          {
+            id: 'current-assets',
+            name: 'Current Assets',
+            type: 'Current',
+            value: financialPosition.currentAssets,
+            purchaseDate: null
+          },
+          {
+            id: 'fixed-assets',
+            name: 'Fixed Assets',
+            type: 'Fixed',
+            value: financialPosition.fixedAssets,
+            purchaseDate: null
+          }
+        ]
+      },
+      liabilities: {
+        total: financialPosition.totalLiabilities,
+        items: [
+          {
+            id: 'current-liabilities',
+            name: 'Current Liabilities',
+            type: 'Current',
+            amount: financialPosition.currentLiabilities,
+            dueDate: null
+          },
+          {
+            id: 'long-term-liabilities',
+            name: 'Long-term Liabilities',
+            type: 'Long-term',
+            amount: financialPosition.longTermLiabilities,
+            dueDate: null
+          }
+        ]
+      },
+      equity: {
+        total: financialPosition.totalEquity,
+        items: [
+          {
+            id: 'common-stock',
+            type: 'Common Stock',
+            amount: financialPosition.commonStock,
+            description: 'Issued capital'
+          },
+          {
+            id: 'retained-earnings',
+            type: 'Retained Earnings',
+            amount: financialPosition.retainedEarnings,
+            description: 'Accumulated profits'
+          }
+        ]
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching financial data:', error)
+    // Return default empty state in case of error
     return {
       assets: {
         total: 0,
@@ -134,65 +213,6 @@ export async function getFinancialData(businessId: string): Promise<FinancialDat
         total: 0,
         items: []
       }
-    }
-  }
-
-  // Transform the data to match the expected format
-  return {
-    assets: {
-      total: financialPosition.totalAssets,
-      items: [
-        {
-          id: 'current-assets',
-          name: 'Current Assets',
-          type: 'Current',
-          value: financialPosition.currentAssets,
-          purchaseDate: null
-        },
-        {
-          id: 'fixed-assets',
-          name: 'Fixed Assets',
-          type: 'Fixed',
-          value: financialPosition.fixedAssets,
-          purchaseDate: null
-        }
-      ]
-    },
-    liabilities: {
-      total: financialPosition.totalLiabilities,
-      items: [
-        {
-          id: 'current-liabilities',
-          name: 'Current Liabilities',
-          type: 'Current',
-          amount: financialPosition.currentLiabilities,
-          dueDate: null
-        },
-        {
-          id: 'long-term-liabilities',
-          name: 'Long-term Liabilities',
-          type: 'Long-term',
-          amount: financialPosition.longTermLiabilities,
-          dueDate: null
-        }
-      ]
-    },
-    equity: {
-      total: financialPosition.totalEquity,
-      items: [
-        {
-          id: 'common-stock',
-          type: 'Common Stock',
-          amount: financialPosition.commonStock,
-          description: 'Issued capital'
-        },
-        {
-          id: 'retained-earnings',
-          type: 'Retained Earnings',
-          amount: financialPosition.retainedEarnings,
-          description: 'Accumulated profits'
-        }
-      ]
     }
   }
 }

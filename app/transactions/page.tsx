@@ -1,15 +1,15 @@
 import { Suspense } from "react"
-import { getTransactions } from "@/lib/actions/transactions"
+import { PageLayout } from "@/components/layouts/page-layout"
 import { TransactionsContent } from "@/components/transactions/transactions-content"
 import { TransactionsLoading } from "@/components/transactions/transactions-loading"
 
-export default async function TransactionsPage() {
-  const { transactions, error } = await getTransactions()
-
+export default function TransactionsPage() {
   return (
-    <Suspense fallback={<TransactionsLoading />}>
-      <TransactionsContent initialTransactions={transactions} error={error} />
-    </Suspense>
+    <PageLayout title="Transactions" description="Manage and track your financial transactions">
+      <Suspense fallback={<TransactionsLoading />}>
+        <TransactionsContent />
+      </Suspense>
+    </PageLayout>
   )
 }
 

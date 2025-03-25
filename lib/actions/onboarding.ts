@@ -66,11 +66,11 @@ export async function saveOnboardingData(userId: string, data: OnboardingData) {
       await tx.financialGoal.createMany({
         data: financialGoals.map(goal => ({
           businessId: business.id,
-          title: goal.title,
-          targetAmount: goal.targetAmount,
+          title: goal.title || "Untitled Goal",
+          targetAmount: goal.targetAmount || 0,
           currentAmount: 0,
-          deadline: goal.deadline,
-          status: goal.status,
+          deadline: goal.deadline || new Date(),
+          status: goal.status || "IN_PROGRESS",
         })),
       })
     }

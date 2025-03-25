@@ -35,6 +35,7 @@ export function DashboardContent() {
       return result.transactions || []
     },
     refetchInterval: 5000,
+    staleTime: 0,
   })
 
   // Use React Query for metrics
@@ -48,29 +49,20 @@ export function DashboardContent() {
       return result.metrics
     },
     refetchInterval: 5000,
+    staleTime: 0,
   })
+
+  if (transactionsLoading || metricsLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading dashboard...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 p-8">
       <div className="space-y-8">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">Welcome back, {session?.user?.name}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>View Calendar</span>
-            </Button>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span>Add Transaction</span>
-            </Button>
-          </div>
-        </div>
-
         {/* Quick Stats Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card className="col-span-1">
@@ -80,11 +72,7 @@ export function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {metricsLoading ? (
-                  <div className="h-8 w-32 animate-pulse rounded bg-muted" />
-                ) : (
-                  formatCurrency(metricsData?.totalRevenue || 0, selectedCurrency.code)
-                )}
+                {formatCurrency(metricsData?.totalRevenue || 0, selectedCurrency.code)}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {metricsData?.revenueGrowth ? (
@@ -111,11 +99,7 @@ export function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {metricsLoading ? (
-                  <div className="h-8 w-32 animate-pulse rounded bg-muted" />
-                ) : (
-                  formatCurrency(metricsData?.totalExpenses || 0, selectedCurrency.code)
-                )}
+                {formatCurrency(metricsData?.totalExpenses || 0, selectedCurrency.code)}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {metricsData?.expenseGrowth ? (
@@ -142,11 +126,7 @@ export function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {metricsLoading ? (
-                  <div className="h-8 w-32 animate-pulse rounded bg-muted" />
-                ) : (
-                  formatCurrency(metricsData?.cashFlow || 0, selectedCurrency.code)
-                )}
+                {formatCurrency(metricsData?.cashFlow || 0, selectedCurrency.code)}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {metricsData?.cashFlow ? (
@@ -191,10 +171,7 @@ export function DashboardContent() {
           </Card>
         </div>
 
-        {/* Bank Statement Upload */}
-        <UploadStatement />
-
-        {/* Bottom Section */}
+        {/* Add Transaction and Recent Transactions */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="col-span-1">
             <CardHeader>
@@ -209,6 +186,9 @@ export function DashboardContent() {
             <TransactionList transactions={transactionsData || []} />
           </div>
         </div>
+
+        {/* Bank Statement Upload */}
+        <UploadStatement />
       </div>
     </div>
   )

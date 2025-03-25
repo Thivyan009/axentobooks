@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, CreditCard, Wallet, PiggyBank, ArrowRight } 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Asset } from "@/lib/types/onboarding"
+import { useCurrencyStore } from "@/lib/store/currency-store"
+import { formatCurrency } from "@/lib/types/currency"
 
 interface FinancialOverviewStepProps {
   assets: Asset[]
@@ -26,6 +28,8 @@ export function FinancialOverviewStep({
   onNext,
   onBack,
 }: FinancialOverviewStepProps) {
+  const { selectedCurrency } = useCurrencyStore()
+
   return (
     <div className="space-y-6">
       <div>
@@ -43,7 +47,9 @@ export function FinancialOverviewStep({
             <CardDescription className="text-green-600 dark:text-green-400">What your business owns</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">${totalAssets.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+              {formatCurrency(totalAssets, selectedCurrency.code)}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               {assets.length} item{assets.length !== 1 ? "s" : ""} added
             </p>
@@ -60,7 +66,7 @@ export function FinancialOverviewStep({
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-              ${totalLiabilities.toLocaleString()}
+              {formatCurrency(totalLiabilities, selectedCurrency.code)}
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               {liabilities.length} item{liabilities.length !== 1 ? "s" : ""} added
@@ -77,7 +83,9 @@ export function FinancialOverviewStep({
             <CardDescription className="text-blue-600 dark:text-blue-400">Your business's net worth</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">${netWorth.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+              {formatCurrency(netWorth, selectedCurrency.code)}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">Assets - Liabilities</p>
           </CardContent>
         </Card>
@@ -96,7 +104,9 @@ export function FinancialOverviewStep({
               <div className="flex items-center">
                 <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md">
                   <span className="font-bold text-green-700 dark:text-green-300">Assets</span>
-                  <span className="ml-2 text-green-700 dark:text-green-300">${totalAssets.toLocaleString()}</span>
+                  <span className="ml-2 text-green-700 dark:text-green-300">
+                    {formatCurrency(totalAssets, selectedCurrency.code)}
+                  </span>
                 </div>
               </div>
 
@@ -105,7 +115,9 @@ export function FinancialOverviewStep({
                 <span className="md:hidden">−</span>
                 <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-md">
                   <span className="font-bold text-red-700 dark:text-red-300">Liabilities</span>
-                  <span className="ml-2 text-red-700 dark:text-red-300">${totalLiabilities.toLocaleString()}</span>
+                  <span className="ml-2 text-red-700 dark:text-red-300">
+                    {formatCurrency(totalLiabilities, selectedCurrency.code)}
+                  </span>
                 </div>
               </div>
 
@@ -113,7 +125,9 @@ export function FinancialOverviewStep({
                 <span className="mx-2">=</span>
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-md">
                   <span className="font-bold text-blue-700 dark:text-blue-300">Equity</span>
-                  <span className="ml-2 text-blue-700 dark:text-blue-300">${netWorth.toLocaleString()}</span>
+                  <span className="ml-2 text-blue-700 dark:text-blue-300">
+                    {formatCurrency(netWorth, selectedCurrency.code)}
+                  </span>
                 </div>
               </div>
             </div>

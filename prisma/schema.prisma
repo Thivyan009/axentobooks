@@ -18,6 +18,8 @@ model User {
   company       String?
   image         String?
   role          String?
+  resetToken    String?
+  resetTokenExpiry DateTime?
   notifications Notification[]
   reports       Report[]
   business      Business?
@@ -27,26 +29,28 @@ model User {
 }
 
 model Business {
-  id                String             @id @default(cuid())
-  name              String
-  industry          String
-  registrationNo    String?
-  taxId             String?
-  currency          String             @default("USD")
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  userId            String             @unique
-  aiInsights        AIInsights[]
-  financialPosition FinancialPosition?
-  reports           Report[]
-  assets            Asset[]
-  bankStatements    BankStatement[]
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  equityDetails     EquityDetail[]
-  financialGoals    FinancialGoal[]
-  liabilities       Liability[]
-  transactions      Transaction[]
+  id                        String                     @id @default(cuid())
+  name                      String
+  industry                  String
+  registrationNo            String?
+  taxId                     String?
+  currency                  String                     @default("USD")
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  userId                    String                     @unique
+  aiInsights                AIInsights[]
   bankStatementTransactions BankStatementTransaction[]
+  financialPosition         FinancialPosition?
+  reports                   Report[]
+  assets                    Asset[]
+  bankStatements            BankStatement[]
+  user                      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equityDetails             EquityDetail[]
+  financialGoals            FinancialGoal[]
+  liabilities               Liability[]
+  transactions              Transaction[]
+  customers                 Customer[]
+  invoices                  Invoice[]
 
   @@map("businesses")
 }
@@ -238,16 +242,65 @@ model AIInsights {
 }
 
 model BankStatementTransaction {
-  id          String   @id @default(cuid())
-  date        DateTime
-  name        String   // Changed from description
-  income      Float    @default(0)
-  expense     Float    @default(0)
-  balance     Float
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  date       DateTime
+  name       String
+  income     Float    @default(0)
+  expense    Float    @default(0)
+  balance    Float
+  businessId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+}
+
+model Customer {
+  id          String    @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  address     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoices    Invoice[]
+
+  @@map("customers")
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  issueDate     DateTime
+  dueDate       DateTime
+  status        String    @default("DUE") // DUE, PAID
+  subtotal      Float
+  tax           Float     @default(0)
+  total         Float
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  businessId    String
+  customerId    String
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items         InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  quantity    Int
+  rate        Float
+  amount      Float
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
 }

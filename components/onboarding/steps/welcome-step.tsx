@@ -27,6 +27,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
     const currency = currencies.find(c => c.code === value)
     if (currency) {
       setSelectedCurrency(currency)
+      useCurrencyStore.getState().initializeCurrency(currency)
     }
   }
 

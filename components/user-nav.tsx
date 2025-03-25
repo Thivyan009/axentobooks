@@ -70,20 +70,6 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
-                <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-                <DropdownMenuShortcut>⌘P</DropdownMenuShortcut>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
               <Link href="/settings">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
@@ -94,27 +80,9 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/settings/billing">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Billing
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
               <Link href="/settings/appearance">
                 <Palette className="mr-2 h-4 w-4" />
                 Appearance
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings/notifications">
-                <Bell className="mr-2 h-4 w-4" />
-                Notifications
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings/preferences">
-                <Globe className="mr-2 h-4 w-4" />
-                Preferences
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>

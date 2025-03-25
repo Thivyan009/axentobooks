@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { TransactionTrends } from "./transaction-trends"
-import { KeyMetrics } from "./key-metrics"
 import { Recommendations } from "./recommendations"
 import { useQuery } from "@tanstack/react-query"
 import { getFinancialMetrics } from "@/lib/actions/transactions"
@@ -30,8 +29,6 @@ export function InsightsTab({ dateRange }: InsightsTabProps) {
 
   return (
     <div className="space-y-6">
-      <KeyMetrics dateRange={dateRange} />
-      
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>

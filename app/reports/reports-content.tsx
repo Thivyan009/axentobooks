@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Scale } from "lucide-react"
+import { FileText, Scale, GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ReportsList } from "@/components/reports/reports-list"
@@ -9,6 +9,7 @@ import { ReportDialog } from "@/components/reports/report-dialog"
 import { generatePLStatement, generateBalanceSheet, getMonthlyTransactions, savePLStatement, saveBalanceSheet } from "@/lib/actions/reports"
 import { toast } from "sonner"
 import type { Report } from "@prisma/client"
+import Link from "next/link"
 
 export function ReportsContent() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
@@ -64,21 +65,21 @@ export function ReportsContent() {
 
   return (
     <main className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
-          <p className="text-muted-foreground">
-            View and manage your financial reports
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
           <Button onClick={handleGeneratePL} disabled={isGenerating}>
             <FileText className="mr-2 h-4 w-4" />
             Generate PL
           </Button>
-          <Button onClick={handleGenerateBalanceSheet} disabled={isGenerating}>
+          <Button disabled>
             <Scale className="mr-2 h-4 w-4" />
-            Generate Balance Sheet
+            Balance Sheet (Coming Soon)
+          </Button>
+          <Button asChild>
+            <Link href="/reports/cfa">
+              <GraduationCap className="mr-2 h-4 w-4" />
+              CFA Report
+            </Link>
           </Button>
         </div>
       </div>

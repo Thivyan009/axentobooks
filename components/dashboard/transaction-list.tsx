@@ -52,10 +52,10 @@ export function TransactionList({ transactions }: TransactionListProps) {
                     </p>
                   </div>
                   <div className={`text-sm font-medium ${
-                    transaction.type === "expense" ? "text-red-500" : "text-green-500"
+                    transaction.type.toLowerCase() === "expense" ? "text-red-500" : "text-green-500"
                   }`}>
-                    {transaction.type === "expense" ? "-" : "+"}
-                    {formatCurrency(transaction.amount, selectedCurrency.code)}
+                    {transaction.type.toLowerCase() === "expense" ? "-" : "+"}
+                    {formatCurrency(Number(transaction.amount), selectedCurrency.code)}
                   </div>
                 </div>
               ))

@@ -5,6 +5,20 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { startOfMonth, endOfMonth, format } from "date-fns"
+import { useCurrencyStore } from "@/lib/stores/currency-store"
+
+function formatCurrency(amount: number): string {
+  const { selectedCurrency, exchangeRates } = useCurrencyStore.getState()
+  const rate = exchangeRates[selectedCurrency.code] || 1
+  const convertedAmount = amount * rate
+
+  return new Intl.NumberFormat(selectedCurrency.locale || 'en-US', {
+    style: 'currency',
+    currency: selectedCurrency.code || 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(convertedAmount)
+}
 
 // Validate API key on startup
 const apiKey = process.env.GEMINI_API_KEY
@@ -120,6 +134,40 @@ interface FinancialPositionUpdates {
   totalLiabilities?: number
   totalEquity?: number
   netWorth?: number
+}
+
+interface AIResponse {
+  periodStart: string
+  periodEnd: string
+  summary: {
+    totalRevenue: number
+    totalExpenses: number
+    netProfitLoss: number
+    profitMargin: number
+    monthOverMonthGrowth: number
+  }
+  revenue: Array<{
+    category: string
+    amount: number
+    items: Array<{
+      description: string
+      amount: number
+    }>
+  }>
+  expenses: Array<{
+    category: string
+    amount: number
+    items: Array<{
+      description: string
+      amount: number
+    }>
+  }>
+  analysis: {
+    insights: string[]
+    recommendations: string[]
+    riskFactors: string[]
+    opportunities: string[]
+  }
 }
 
 export async function getReports() {
@@ -249,145 +297,80 @@ export async function getMonthlyTransactions(month: Date) {
 
 export async function generatePLStatement(transactions: Transaction[]): Promise<PLStatementData> {
   try {
-    console.log("Starting P&L statement generation with Gemini AI")
+    console.log("Starting P&L statement generation")
     
-    // Check for API key
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      console.error("Gemini API key is not configured")
-      throw new Error("Gemini API key is not configured. Please check your environment variables.")
+    // Validate transactions
+    if (!transactions || transactions.length === 0) {
+      throw new Error("No transactions provided for P&L statement generation")
     }
-
-    // Format transactions for AI
-    const formattedTransactions = transactions.map(t => ({
-      date: format(new Date(t.date), "yyyy-MM-dd"),
-      type: t.type,
-      amount: t.amount,
-      category: t.category,
-      description: t.description
-    }))
 
     // Get period start and end dates
     const dates = transactions.map(t => new Date(t.date))
     const periodStart = format(new Date(Math.min(...dates.map(d => d.getTime()))), "yyyy-MM-dd")
     const periodEnd = format(new Date(Math.max(...dates.map(d => d.getTime()))), "yyyy-MM-dd")
 
-    console.log(`Sending ${formattedTransactions.length} transactions to Gemini AI`)
-
-    // Generate prompt for AI
-    const prompt = `You are a financial analyst. Generate a Profit & Loss statement based on the following transactions.
-    
-    IMPORTANT: Your response must be a valid JSON object with exactly this structure:
-    {
-      "periodStart": string (YYYY-MM-DD format),
-      "periodEnd": string (YYYY-MM-DD format),
-      "summary": {
-        "totalRevenue": number (sum of all positive amounts),
-        "totalExpenses": number (sum of all negative amounts as positive numbers),
-        "netProfitLoss": number (totalRevenue - totalExpenses),
-        "profitMargin": number (percentage),
-        "monthOverMonthGrowth": number (percentage)
-      },
-      "revenue": [
-        {
-          "category": string,
-          "amount": number,
-          "items": [
-            {
-              "description": string,
-              "amount": number
-            }
-          ]
-        }
-      ],
-      "expenses": [
-        {
-          "category": string,
-          "amount": number,
-          "items": [
-            {
-              "description": string,
-              "amount": number
-            }
-          ]
-        }
-      ],
-      "analysis": {
-        "insights": string[],
-        "recommendations": string[],
-        "riskFactors": string[],
-        "opportunities": string[]
-      }
-    }
-
-    Rules:
-    1. All numbers must be positive (even expenses)
-    2. Revenue is from income transactions
-    3. Expenses are from expense transactions
-    4. Categories must be properly grouped
-    5. The response must be valid JSON that can be parsed
-    6. Include 2-3 items in each category
-    7. Provide 2-3 insights, recommendations, risk factors, and opportunities
-    8. All required fields must be present
-    9. All arrays must have at least one item
-    10. All numbers must be valid numbers (not strings)
-
-    Transactions:
-    ${JSON.stringify(formattedTransactions, null, 2)}
-
-    Respond with ONLY the JSON object, no additional text or explanation.`
-
-    // Call Gemini API using the GoogleGenerativeAI client
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        temperature: 0.3,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      }
-    })
-    
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const generatedText = response.text()
-    
-    console.log("Received response from Gemini AI")
-    console.log("Generated text:", generatedText)
-
-    // Clean the response text to ensure it's valid JSON
-    const cleanedText = generatedText
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim()
-
-    // Parse the JSON response
-    let aiResponse: any
-    try {
-      aiResponse = JSON.parse(cleanedText)
-    } catch (parseError) {
-      console.error("Failed to parse Gemini response:", parseError)
-      console.error("Cleaned text:", cleanedText)
-      throw new Error("Failed to parse AI response. Please try again.")
-    }
-
-    // Calculate actual totals from transactions
+    // Calculate totals from transactions
     const totalRevenue = transactions
       .filter(t => t.type.toLowerCase() === 'income')
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      .reduce((sum, t) => sum + Number(t.amount), 0)
 
     const totalExpenses = transactions
       .filter(t => t.type.toLowerCase() === 'expense')
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      .reduce((sum, t) => sum + Number(t.amount), 0)
 
     const netProfitLoss = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (netProfitLoss / totalRevenue) * 100 : 0
     const monthOverMonthGrowth = 0 // This would need historical data to calculate
 
-    // Transform the AI response to match our interface
+    // Group transactions by category
+    const revenueByCategory = transactions
+      .filter(t => t.type.toLowerCase() === 'income')
+      .reduce((acc, t) => {
+        const category = t.category || 'Uncategorized'
+        if (!acc[category]) {
+          acc[category] = {
+            category,
+            amount: 0,
+            items: []
+          }
+        }
+        acc[category].amount += Number(t.amount)
+        acc[category].items.push({
+          description: t.description,
+          amount: Number(t.amount)
+        })
+        return acc
+      }, {} as Record<string, { category: string; amount: number; items: Array<{ description: string; amount: number }> }>)
+
+    const expensesByCategory = transactions
+      .filter(t => t.type.toLowerCase() === 'expense')
+      .reduce((acc, t) => {
+        const category = t.category || 'Uncategorized'
+        if (!acc[category]) {
+          acc[category] = {
+            category,
+            amount: 0,
+            items: []
+          }
+        }
+        acc[category].amount += Number(t.amount)
+        acc[category].items.push({
+          description: t.description,
+          amount: Number(t.amount)
+        })
+        return acc
+      }, {} as Record<string, { category: string; amount: number; items: Array<{ description: string; amount: number }> }>)
+
+    // Generate insights based on the data
+    const insights = generateInsights(totalRevenue, totalExpenses, netProfitLoss, profitMargin)
+    const recommendations = generateRecommendations(totalRevenue, totalExpenses, netProfitLoss, profitMargin)
+    const riskFactors = generateRiskFactors(totalRevenue, totalExpenses, netProfitLoss, profitMargin)
+    const opportunities = generateOpportunities(totalRevenue, totalExpenses, netProfitLoss, profitMargin)
+
+    // Construct the final statement
     const statement: PLStatementData = {
-      periodStart: periodStart,
-      periodEnd: periodEnd,
+      periodStart,
+      periodEnd,
       summary: {
         totalRevenue,
         totalExpenses,
@@ -395,57 +378,234 @@ export async function generatePLStatement(transactions: Transaction[]): Promise<
         profitMargin,
         monthOverMonthGrowth
       },
-      revenue: (aiResponse.revenue || []).map((rev: any) => ({
-        category: rev.category || "Uncategorized",
-        amount: Math.abs(Number(rev.amount) || 0),
-        items: (rev.items || []).map((item: any) => ({
-          description: item.description || "No description",
-          amount: Math.abs(Number(item.amount) || 0)
-        }))
-      })),
-      expenses: (aiResponse.expenses || []).map((exp: any) => ({
-        category: exp.category || "Uncategorized",
-        amount: Math.abs(Number(exp.amount) || 0),
-        items: (exp.items || []).map((item: any) => ({
-          description: item.description || "No description",
-          amount: Math.abs(Number(item.amount) || 0)
-        }))
-      })),
+      revenue: Object.values(revenueByCategory),
+      expenses: Object.values(expensesByCategory),
       analysis: {
-        insights: aiResponse.analysis?.insights || [
-          "Revenue and expenses are balanced",
-          "Business is operating within expected parameters",
-          "Regular monitoring of financial metrics is recommended"
-        ],
-        recommendations: aiResponse.analysis?.recommendations || [
-          "Review expense categories for optimization",
-          "Consider diversifying revenue streams",
-          "Maintain regular financial reviews"
-        ],
-        riskFactors: aiResponse.analysis?.riskFactors || [
-          "Market volatility",
-          "Economic conditions",
-          "Competition"
-        ],
-        opportunities: aiResponse.analysis?.opportunities || [
-          "Market expansion",
-          "Cost optimization",
-          "New revenue streams"
-        ]
+        insights,
+        recommendations,
+        riskFactors,
+        opportunities
       }
     }
 
-    // Validate the transformed statement
-    if (typeof statement.summary.totalRevenue !== 'number' || 
-        typeof statement.summary.totalExpenses !== 'number') {
-      console.error("Invalid statement structure:", statement)
-      throw new Error("Invalid statement structure received from AI")
-    }
+    // Validate the statement
+    validateStatement(statement)
 
     return statement
   } catch (error) {
     console.error("Error in generatePLStatement:", error)
     throw error
+  }
+}
+
+function generateInsights(
+  totalRevenue: number,
+  totalExpenses: number,
+  netProfitLoss: number,
+  profitMargin: number
+): string[] {
+  const insights: string[] = []
+
+  // Profitability Analysis
+  if (netProfitLoss > 0) {
+    insights.push(`The business is profitable with a net profit of ${formatCurrency(netProfitLoss)}`)
+    if (netProfitLoss > totalRevenue * 0.2) {
+      insights.push(`Exceptional performance with profit exceeding 20% of revenue`)
+    }
+  } else {
+    insights.push(`The business is operating at a loss of ${formatCurrency(Math.abs(netProfitLoss))}`)
+  }
+
+  // Profit Margin Analysis
+  if (profitMargin > 20) {
+    insights.push(`Strong profit margin of ${profitMargin.toFixed(1)}% indicates highly efficient operations and good pricing strategy`)
+  } else if (profitMargin > 10) {
+    insights.push(`Moderate profit margin of ${profitMargin.toFixed(1)}% suggests stable operations with room for optimization`)
+  } else if (profitMargin > 0) {
+    insights.push(`Low profit margin of ${profitMargin.toFixed(1)}% indicates need for strategic improvements`)
+  } else {
+    insights.push(`Negative profit margin of ${profitMargin.toFixed(1)}% signals significant operational challenges`)
+  }
+
+  // Expense Analysis
+  const expenseRatio = (totalExpenses / totalRevenue) * 100
+  if (expenseRatio > 90) {
+    insights.push(`Critical: High expense ratio of ${expenseRatio.toFixed(1)}% threatens business sustainability`)
+  } else if (expenseRatio > 80) {
+    insights.push(`Warning: Elevated expense ratio of ${expenseRatio.toFixed(1)}% requires immediate attention`)
+  } else if (expenseRatio > 70) {
+    insights.push(`Moderate expense ratio of ${expenseRatio.toFixed(1)}% indicates need for cost optimization`)
+  } else {
+    insights.push(`Healthy expense ratio of ${expenseRatio.toFixed(1)}% demonstrates effective cost management`)
+  }
+
+  // Revenue Analysis
+  if (totalRevenue > 0) {
+    const revenuePerExpenseRatio = totalRevenue / totalExpenses
+    if (revenuePerExpenseRatio > 1.5) {
+      insights.push(`Strong revenue generation with ${revenuePerExpenseRatio.toFixed(2)}x revenue to expense ratio`)
+    } else if (revenuePerExpenseRatio > 1.2) {
+      insights.push(`Healthy revenue to expense ratio of ${revenuePerExpenseRatio.toFixed(2)}x`)
+    }
+  }
+
+  return insights
+}
+
+function generateRecommendations(
+  totalRevenue: number,
+  totalExpenses: number,
+  netProfitLoss: number,
+  profitMargin: number
+): string[] {
+  const recommendations: string[] = []
+
+  // Strategic Recommendations
+  recommendations.push("Implement monthly financial review meetings to track KPIs and adjust strategies")
+
+  // Profitability-based Recommendations
+  if (netProfitLoss < 0) {
+    recommendations.push("Conduct immediate cost-benefit analysis of all expense categories")
+    recommendations.push("Develop a 90-day turnaround plan focusing on revenue growth and cost reduction")
+    recommendations.push("Consider renegotiating terms with suppliers and vendors")
+  } else if (profitMargin < 10) {
+    recommendations.push("Review pricing strategy and consider selective price adjustments")
+    recommendations.push("Identify and focus on high-margin products or services")
+    recommendations.push("Analyze customer acquisition costs and optimize marketing spend")
+  }
+
+  // Expense Management Recommendations
+  const expenseRatio = (totalExpenses / totalRevenue) * 100
+  if (expenseRatio > 80) {
+    recommendations.push("Implement zero-based budgeting for all departments")
+    recommendations.push("Automate manual processes to reduce operational costs")
+    recommendations.push("Review and potentially renegotiate fixed costs like rent and subscriptions")
+  } else if (expenseRatio > 70) {
+    recommendations.push("Conduct efficiency audit to identify cost optimization opportunities")
+    recommendations.push("Consider outsourcing non-core business functions")
+  }
+
+  // Growth and Optimization Recommendations
+  if (profitMargin > 15) {
+    recommendations.push("Explore market expansion opportunities while maintaining cost efficiency")
+    recommendations.push("Consider strategic investments in technology or capacity")
+    recommendations.push("Develop customer retention programs to maintain profitability")
+  }
+
+  return recommendations
+}
+
+function generateRiskFactors(
+  totalRevenue: number,
+  totalExpenses: number,
+  netProfitLoss: number,
+  profitMargin: number
+): string[] {
+  const riskFactors: string[] = []
+
+  // Financial Risks
+  if (netProfitLoss < 0) {
+    riskFactors.push("Continued losses may lead to cash flow constraints")
+    riskFactors.push("Limited financial buffer for unexpected expenses")
+    riskFactors.push("Potential difficulty in securing future financing")
+  }
+
+  // Operational Risks
+  const expenseRatio = (totalExpenses / totalRevenue) * 100
+  if (expenseRatio > 80) {
+    riskFactors.push("High operational costs affecting business sustainability")
+    riskFactors.push("Limited flexibility to respond to market changes")
+    riskFactors.push("Vulnerability to input cost increases")
+  }
+
+  // Market and Competition Risks
+  if (profitMargin < 10) {
+    riskFactors.push("Low margins make the business vulnerable to market fluctuations")
+    riskFactors.push("Limited ability to compete on price")
+    riskFactors.push("Reduced capacity to invest in growth initiatives")
+  }
+
+  // Add general risk factors
+  riskFactors.push("Changing market conditions could impact revenue")
+  riskFactors.push("Potential regulatory changes may affect operations")
+  riskFactors.push("Economic uncertainties could affect customer spending")
+
+  return riskFactors
+}
+
+function generateOpportunities(
+  totalRevenue: number,
+  totalExpenses: number,
+  netProfitLoss: number,
+  profitMargin: number
+): string[] {
+  const opportunities: string[] = []
+
+  // Growth Opportunities
+  if (netProfitLoss > 0) {
+    opportunities.push("Potential for market expansion using retained earnings")
+    opportunities.push("Opportunity to invest in new technologies or equipment")
+    opportunities.push("Consider strategic acquisitions or partnerships")
+  }
+
+  // Efficiency Opportunities
+  if (profitMargin > 15) {
+    opportunities.push("Strong position to invest in automation and productivity improvements")
+    opportunities.push("Potential to develop premium product/service offerings")
+    opportunities.push("Opportunity to build strategic reserves for future growth")
+  }
+
+  // Market Opportunities
+  const expenseRatio = (totalExpenses / totalRevenue) * 100
+  if (expenseRatio < 70) {
+    opportunities.push("Strong cost position enables competitive pricing strategies")
+    opportunities.push("Potential to increase market share through targeted investments")
+    opportunities.push("Opportunity to explore new market segments")
+  }
+
+  // Innovation Opportunities
+  opportunities.push("Explore digital transformation initiatives")
+  opportunities.push("Consider developing new revenue streams")
+  opportunities.push("Investigate emerging market trends for growth potential")
+
+  return opportunities
+}
+
+function validateStatement(statement: PLStatementData) {
+  // Validate summary
+  if (typeof statement.summary.totalRevenue !== 'number' || statement.summary.totalRevenue < 0) {
+    throw new Error("Invalid total revenue in statement")
+  }
+  if (typeof statement.summary.totalExpenses !== 'number' || statement.summary.totalExpenses < 0) {
+    throw new Error("Invalid total expenses in statement")
+  }
+  if (typeof statement.summary.netProfitLoss !== 'number') {
+    throw new Error("Invalid net profit/loss in statement")
+  }
+  if (typeof statement.summary.profitMargin !== 'number') {
+    throw new Error("Invalid profit margin in statement")
+  }
+
+  // Validate revenue and expenses
+  if (!Array.isArray(statement.revenue)) {
+    throw new Error("Invalid revenue array in statement")
+  }
+  if (!Array.isArray(statement.expenses)) {
+    throw new Error("Invalid expenses array in statement")
+  }
+
+  // Validate analysis
+  if (!Array.isArray(statement.analysis.insights) || statement.analysis.insights.length === 0) {
+    throw new Error("Missing insights in statement")
+  }
+  if (!Array.isArray(statement.analysis.recommendations) || statement.analysis.recommendations.length === 0) {
+    throw new Error("Missing recommendations in statement")
+  }
+  if (!Array.isArray(statement.analysis.riskFactors) || statement.analysis.riskFactors.length === 0) {
+    throw new Error("Missing risk factors in statement")
+  }
+  if (!Array.isArray(statement.analysis.opportunities) || statement.analysis.opportunities.length === 0) {
+    throw new Error("Missing opportunities in statement")
   }
 }
 

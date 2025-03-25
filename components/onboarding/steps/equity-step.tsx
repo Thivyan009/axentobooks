@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
 import type { Equity } from "@/lib/types/onboarding"
+import { useCurrencyStore } from "@/lib/store/currency-store"
+import { formatCurrency } from "@/lib/types/currency"
 
 const EQUITY_TYPES = [
   {
@@ -51,6 +53,7 @@ export function EquityStep({ form, onNext, onBack, formData, updateFormData, isS
   const [equity, setEquity] = useState<Equity[]>(form.getValues().equity || [])
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const { toast } = useToast()
+  const { selectedCurrency } = useCurrencyStore()
 
   const validateEquity = (equityItem: Equity, index: number) => {
     const newErrors: { [key: string]: string } = {}
@@ -230,7 +233,7 @@ export function EquityStep({ form, onNext, onBack, formData, updateFormData, isS
               <span className="font-medium text-purple-700 dark:text-purple-300">Total Equity</span>
             </div>
             <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-              ${totalEquityValue.toLocaleString()}
+              {formatCurrency(totalEquityValue, selectedCurrency.code)}
             </div>
           </div>
         </div>
@@ -351,7 +354,7 @@ export function EquityStep({ form, onNext, onBack, formData, updateFormData, isS
                     </Tooltip>
                   </TooltipProvider>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{selectedCurrency.symbol}</span>
                     <Input
                       id={amountId}
                       type="number"

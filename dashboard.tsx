@@ -13,6 +13,7 @@ import {
   Receipt,
   Settings,
   Upload,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { notify } from "@/lib/notifications"
+import Link from "next/link"
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -57,6 +59,10 @@ export default function Dashboard() {
             <Button variant="ghost" className="w-full justify-start gap-2">
               <LineChart className="h-4 w-4" />
               Reports
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <FileText className="h-4 w-4" />
+              Invoices
             </Button>
             <Button variant="ghost" className="w-full justify-start gap-2">
               <Building2 className="h-4 w-4" />
@@ -94,6 +100,10 @@ export default function Dashboard() {
                 Reports
               </Button>
               <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setSidebarOpen(false)}>
+                <FileText className="h-4 w-4" />
+                Invoices
+              </Button>
+              <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setSidebarOpen(false)}>
                 <Building2 className="h-4 w-4" />
                 Company
               </Button>
@@ -116,6 +126,12 @@ export default function Dashboard() {
           <div className="flex-1">
             <h1 className="font-semibold">Dashboard</h1>
           </div>
+          <Button variant="ghost" size="sm" className="gap-2" asChild>
+            <Link href="/invoices">
+              <FileText className="h-4 w-4" />
+              Invoices
+            </Link>
+          </Button>
           <Dialog>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2">

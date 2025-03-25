@@ -5,17 +5,30 @@ import { withAuth } from "next-auth/middleware"
 export default withAuth(
   function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
+    const token = request.nextauth.token
 
     // If the user is authenticated and trying to access auth pages, redirect to dashboard
-    if (request.nextauth.token && (pathname.startsWith("/auth") || pathname === "/")) {
+    if (token && (pathname.startsWith("/auth") || pathname === "/")) {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
 
     // If not authenticated and trying to access protected routes, redirect to signin
-    if (!request.nextauth.token && !pathname.startsWith("/auth")) {
+    if (!token && !pathname.startsWith("/auth")) {
       const signInUrl = new URL("/auth/signin", request.url)
       signInUrl.searchParams.set("callbackUrl", pathname)
       return NextResponse.redirect(signInUrl)
+    }
+
+    // Protect admin routes
+    if (pathname.startsWith("/admin")) {
+      if (!token) {
+        return NextResponse.redirect(new URL("/admin/login", request.url))
+      }
+
+      // Check if user is admin
+      if (token.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", request.url))
+      }
     }
 
     return NextResponse.next()
@@ -27,6 +40,12 @@ export default withAuth(
         if (req.nextUrl.pathname.startsWith("/auth/")) {
           return true
         }
+
+        // For admin routes, require admin role
+        if (req.nextUrl.pathname.startsWith("/admin")) {
+          return token?.role === "admin"
+        }
+
         // For all other routes, require authentication
         return !!token
       },

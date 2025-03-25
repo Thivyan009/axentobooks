@@ -21,30 +21,20 @@ export default function StatementPage({ params, searchParams }: StatementPagePro
   const report = mockReports.find((r) => r.id === params.id)
 
   if (!report) {
-    return notFound()
+    notFound()
   }
 
   const handlePrint = () => {
-    if (typeof window !== "undefined") {
-      window.print()
-    }
+    window.print()
   }
 
   const handleDownload = () => {
-    const jsonString = JSON.stringify(report.data, null, 2)
-    const blob = new Blob([jsonString], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${report.name.toLowerCase().replace(/\s+/g, "-")}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    // Implement download functionality
+    console.log("Download clicked")
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl">
+    <div className="container mx-auto py-8">
       <div className="flex flex-col space-y-8">
         <div className="flex items-center justify-between print:hidden">
           <Link href="/reports">
@@ -77,11 +67,13 @@ export default function StatementPage({ params, searchParams }: StatementPagePro
             </p>
           </div>
 
-          {report.type === "pl" ? (
-            <StatementView statement={report.data} />
-          ) : (
-            <BalanceSheetView statement={report.data} />
-          )}
+          <div className="space-y-6">
+            {report.type === "pl" ? (
+              <StatementView statement={report.data} />
+            ) : (
+              <BalanceSheetView statement={report.data} />
+            )}
+          </div>
         </div>
       </div>
     </div>

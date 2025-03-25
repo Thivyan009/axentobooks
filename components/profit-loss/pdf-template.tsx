@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, PDFViewer } from "@react-pdf/renderer"
 import { format } from "date-fns"
 import type { ProfitLossStatement } from "@/lib/types/ai"
+import { formatCurrency } from "@/lib/utils/currency"
 
 const styles = StyleSheet.create({
   page: {
@@ -90,13 +91,6 @@ interface PLFDocumentProps {
 }
 
 export function PLFDocument({ statement }: PLFDocumentProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
-  }
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { ArrowDown, ArrowUp, BarChart3, ChevronDown, Download, FileText, LineChart, PieChart, Plus } from "lucide-react"
+import { ArrowDown, ArrowUp, BarChart3, ChevronDown, FileText, LineChart, PieChart, Wallet, TrendingUp, AlertCircle, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
@@ -19,7 +19,6 @@ import { useQuery } from "@tanstack/react-query"
 import { getFinancialMetrics, getTransactions } from "@/lib/actions/transactions"
 import { useCurrencyStore } from "@/lib/store/currency-store"
 import { formatCurrency } from "@/lib/types/currency"
-import { useRouter } from "next/navigation"
 import { InsightsTab } from "./insights-tab"
 
 export function AnalyticsContent() {
@@ -29,7 +28,6 @@ export function AnalyticsContent() {
   })
   const { toast } = useToast()
   const { selectedCurrency } = useCurrencyStore()
-  const router = useRouter()
 
   // Use React Query for transactions and metrics with date range
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
@@ -54,44 +52,6 @@ export function AnalyticsContent() {
     },
   })
 
-  const handleExport = () => {
-    // Create a report object with the current data
-    const reportData = {
-      dateRange: {
-        from: date?.from,
-        to: date?.to,
-      },
-      metrics: metricsData,
-      transactions: transactionsData,
-    }
-
-    // Convert to JSON and create download
-    const jsonString = JSON.stringify(reportData, null, 2)
-    const blob = new Blob([jsonString], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `analytics-report-${format(new Date(), "yyyy-MM-dd")}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    toast({
-      title: "Report Exported",
-      description: "Your analytics report has been downloaded successfully.",
-    })
-  }
-
-  const handleCreateReport = () => {
-    // Navigate to the custom report builder with pre-filled data
-    router.push("/reports/custom")
-    toast({
-      title: "Creating Report",
-      description: "Redirecting to report builder...",
-    })
-  }
-
   // Calculate transaction count
   const transactionCount = transactionsData?.length || 0
 
@@ -100,68 +60,94 @@ export function AnalyticsContent() {
       {/* Header Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <DatePickerWithRange date={date} setDate={setDate} />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button onClick={handleCreateReport}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Report
-          </Button>
-        </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <LineChart className="h-4 w-4 text-muted-foreground" />
+            <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metricsLoading ? "Loading..." : formatCurrency(metricsData?.totalRevenue || 0, selectedCurrency.code)}
+              {formatCurrency(metricsData?.totalRevenue || 0, selectedCurrency.code)}
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <ArrowUp className="h-4 w-4 text-green-500" />
-              <span className="text-green-500">+20.1%</span>
-              <span>vs last month</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {metricsData?.revenueGrowth !== undefined ? (
+                <>
+                  {metricsData.revenueGrowth > 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <TrendingUp className="h-3 w-3 text-red-500 rotate-180" />
+                  )}
+                  <span className={metricsData.revenueGrowth > 0 ? "text-green-500" : "text-red-500"}>
+                    {Math.abs(metricsData.revenueGrowth).toFixed(1)}% from last month
+                  </span>
+                </>
+              ) : (
+                <span>No previous data</span>
+              )}
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(metricsData?.totalExpenses || 0, selectedCurrency.code)}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {metricsData?.expenseGrowth !== undefined ? (
+                <>
+                  {metricsData.expenseGrowth > 0 ? (
+                    <AlertCircle className="h-3 w-3 text-red-500" />
+                  ) : (
+                    <AlertCircle className="h-3 w-3 text-green-500" />
+                  )}
+                  <span className={metricsData.expenseGrowth > 0 ? "text-red-500" : "text-green-500"}>
+                    {Math.abs(metricsData.expenseGrowth).toFixed(1)}% from last month
+                  </span>
+                </>
+              ) : (
+                <span>No previous data</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metricsLoading ? "Loading..." : formatCurrency(metricsData?.totalExpenses || 0, selectedCurrency.code)}
+              {formatCurrency(metricsData?.cashFlow || 0, selectedCurrency.code)}
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <ArrowDown className="h-4 w-4 text-red-500" />
-              <span className="text-red-500">-4.5%</span>
-              <span>vs last month</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metricsLoading ? "Loading..." : formatCurrency(metricsData?.cashFlow || 0, selectedCurrency.code)}
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <ArrowUp className="h-4 w-4 text-green-500" />
-              <span className="text-green-500">+12.3%</span>
-              <span>vs last month</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {metricsData?.cashFlow !== undefined ? (
+                <>
+                  {metricsData.cashFlow > 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <TrendingUp className="h-3 w-3 text-red-500 rotate-180" />
+                  )}
+                  <span className={metricsData.cashFlow > 0 ? "text-green-500" : "text-red-500"}>
+                    {metricsData.cashFlow > 0 ? "Positive" : "Negative"} cash flow
+                  </span>
+                </>
+              ) : (
+                <span>No data available</span>
+              )}
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Transactions</CardTitle>
@@ -171,8 +157,17 @@ export function AnalyticsContent() {
             <div className="text-2xl font-bold">
               {transactionsLoading ? "Loading..." : transactionCount}
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>Total transactions</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {metricsData?.transactionFrequency !== undefined ? (
+                <>
+                  <TrendingUp className="h-3 w-3 text-blue-500" />
+                  <span className="text-blue-500">
+                    {metricsData.transactionFrequency.toFixed(1)} transactions/day
+                  </span>
+                </>
+              ) : (
+                <span>No data available</span>
+              )}
             </div>
           </CardContent>
         </Card>
