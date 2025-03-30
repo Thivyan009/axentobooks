@@ -8,17 +8,21 @@ import { useToast } from "@/components/ui/use-toast"
 
 export default function OnboardingControllerPage() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!session?.user?.id) {
+    if (status === "unauthenticated") {
       router.push("/auth/signin")
       return
     }
-  }, [session, router])
+  }, [status, router])
 
-  if (!session?.user?.id) {
+  if (status === "loading") {
+    return <div>Loading...</div>
+  }
+
+  if (status === "unauthenticated") {
     return null
   }
 

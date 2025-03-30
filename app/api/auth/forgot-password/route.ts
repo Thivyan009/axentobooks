@@ -10,15 +10,17 @@ const requiredEnvVars = {
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
 }
 
-Object.entries(requiredEnvVars).forEach(([key, value]) => {
+for (const [key, value] of Object.entries(requiredEnvVars)) {
   if (!value) {
     throw new Error(`${key} must be set in environment variables`)
   }
-})
+}
 
 // Create Gmail transporter
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
@@ -74,14 +76,14 @@ export async function POST(req: Request) {
     }
 
     // Create reset URL
-    const baseUrl = process.env.NEXTAUTH_URL!.replace(/\/$/, "")
+    const baseUrl = process.env.NEXTAUTH_URL.replace(/\/$/, "")
     const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`
 
     // Prepare email content
     const emailContent = {
       from: {
         name: "Axento Books",
-        address: process.env.SMTP_USER!,
+        address: process.env.SMTP_USER,
       },
       to: {
         name: user.name,
@@ -141,16 +143,16 @@ export async function POST(req: Request) {
         success: true,
         message: "If an account exists with this email, you will receive a password reset link",
       })
-    } catch (emailError: any) {
+    } catch (emailError: Error) {
       console.error("[Forgot Password] Email error:", {
         error: emailError.message,
-        code: emailError.code,
-        command: emailError.command,
-        response: emailError.response,
+        code: (emailError as { code?: string }).code,
+        command: (emailError as { command?: string }).command,
+        response: (emailError as { response?: string }).response,
       })
 
       // Check for specific Gmail errors
-      if (emailError.code === 'EAUTH') {
+      if ((emailError as { code?: string }).code === 'EAUTH') {
         console.error("[Forgot Password] Authentication error. Please check Gmail App Password")
         throw new Error("Email authentication failed. Please check SMTP credentials.")
       }
