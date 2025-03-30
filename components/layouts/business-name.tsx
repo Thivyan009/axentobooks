@@ -20,7 +20,7 @@ export function BusinessName() {
       try {
         console.log("Fetching business name...")
         const response = await fetch("/api/business/name")
-        
+        console.log("Response:", response)
         if (!response.ok) {
           console.error("Failed to fetch business name:", response.status, response.statusText)
           const text = await response.text()
@@ -34,6 +34,7 @@ export function BusinessName() {
         setError(null)
       } catch (error) {
         console.error("Failed to fetch business name:", error)
+
         setError("Failed to load business name")
       } finally {
         setIsLoading(false)

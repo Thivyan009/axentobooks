@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/db"
 
 // Log the API key status (without exposing the key)
 console.log("Gemini API Key status:", process.env.GEMINI_API_KEY ? "Present" : "Missing")
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch business and financial data
-    const business = await db.business.findFirst({
+    const business = await prisma.business.findFirst({
       where: { userId: session.user.id },
       include: {
         financialGoals: true,

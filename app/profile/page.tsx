@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Mail, MapPin, Phone, Building2 } from "lucide-react"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "Profile - Axento Books",
   description: "Manage your profile information and settings",
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="space-y-2">
@@ -97,5 +98,13 @@ export default function ProfilePage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfileContent />
+    </Suspense>
   )
 } 

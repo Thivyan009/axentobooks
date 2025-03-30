@@ -1,6 +1,6 @@
 "use server"
 
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import type { Notification } from "@/lib/types/notification"
 
 export async function getNotifications(userId: string) {

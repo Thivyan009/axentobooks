@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { BarChart, Download, FileText, Filter, PieChart, Plus, Save, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import type { DateRange } from "react-day-picker"
 
-export function CustomReportBuilder() {
+function CustomReportBuilderContent() {
   const [reportName, setReportName] = useState("")
   const [reportType, setReportType] = useState("financial")
   const [date, setDate] = useState<DateRange | undefined>({
@@ -295,6 +295,14 @@ export function CustomReportBuilder() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function CustomReportBuilder() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CustomReportBuilderContent />
+    </Suspense>
   )
 }
 

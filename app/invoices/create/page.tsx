@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { CreateInvoiceForm } from "./create-invoice-form";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export default async function CreateInvoicePage() {
   const session = await auth();

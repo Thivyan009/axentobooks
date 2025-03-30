@@ -1,8 +1,9 @@
 "use server"
 
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import type { OnboardingData } from "@/lib/types/onboarding"
+import { auth } from "../auth"
 
 export async function saveOnboardingData(userId: string, data: OnboardingData) {
   const { businessInfo, financialGoals, assets, liabilities, equity } = data
@@ -174,6 +175,29 @@ export async function resetOnboardingAction(userId: string) {
   }
 }
 
-// Note: The following functions have been removed as they were cookie-based:
-// - resetAndRedirectAction
+export async function resetAndRedirectAction() {
+  "use server"
+  
+  try {
+    // Get current user settings
+    const session = await auth()
+    if (!session?.user?.id) {
+      throw new Error("Not authenticated")
+    }
+
+    // Reset onboarding status
+    await prisma.userSettings.update({
+      where: { userId: session.user.id },
+      data: {
+        onboardingCompleted: false
+      }
+    })
+
+    // Redirect to onboarding
+    redirect("/onboarding/controller")
+  } catch (error) {
+    console.error("Failed to reset and redirect:", error)
+    throw new Error("Failed to reset and redirect to onboarding")
+  }
+}
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { randomBytes } from "node:crypto"
 import nodemailer from "nodemailer"
 

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { Sidebar } from "@/components/admin/sidebar"
 
 export default async function AdminLayout({
@@ -15,7 +15,7 @@ export default async function AdminLayout({
   }
 
   // Check if user is admin
-  const user = await db.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: { id: session.user.id },
   })
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { readFile } from "node:fs/promises"
 import path from "path"
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const { month } = await req.json()
 
     // Get the business for the current user
-    const business = await db.business.findFirst({
+    const business = await prisma.business.findFirst({
       where: { userId: session.user.id },
     })
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     endDate.setDate(endDate.getDate() - 1)
 
     // Get all transactions (both manual and bank statement)
-    const manualTransactions = await db.transaction.findMany({
+    const manualTransactions = await prisma.transaction.findMany({
       where: {
         businessId: business.id,
         date: {
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       },
     })
 
-    const bankStatementTransactions = await db.bankStatementTransaction.findMany({
+    const bankStatementTransactions = await prisma.bankStatementTransaction.findMany({
       where: {
         businessId: business.id,
         date: {
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     })
 
     // Get bank statements for the selected month
-    const bankStatements = await db.bankStatement.findMany({
+    const bankStatements = await prisma.bankStatement.findMany({
       where: {
         businessId: business.id,
         date: {
@@ -220,7 +220,7 @@ export async function POST(req: Request) {
     const statements = JSON.parse(text)
 
     // Save the statements to the database
-    await db.profitLossStatement.create({
+    await prisma.profitLossStatement.create({
       data: {
         businessId: business.id,
         month: startDate,
@@ -235,7 +235,7 @@ export async function POST(req: Request) {
       },
     })
 
-    await db.balanceSheet.create({
+    await prisma.balanceSheet.create({
       data: {
         businessId: business.id,
         month: startDate,

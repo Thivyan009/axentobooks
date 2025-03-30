@@ -2,7 +2,7 @@ import { Inter } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { Header } from "@/components/header"
 import GoogleAnalytics from "@/components/analytics/google-analytics"
-import "@/app/globals.css"
+import "@/styles/globals.css"
 import { CurrencyProvider } from '@/components/providers/currency-provider'
 
 const inter = Inter({ subsets: ["latin"] })

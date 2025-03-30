@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import type { Asset, Liability, Equity } from "@/lib/types/onboarding"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
 interface FinancialData {

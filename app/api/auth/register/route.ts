@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const RegisterSchema = z.object({
@@ -34,9 +34,9 @@ export async function POST(req: Request) {
     // Create user and business
     const hashedPassword = await bcrypt.hash(password, 10)
     
-    const result = await prisma.$transaction(async (tx) => {
+    try {
       // Create user first
-      const user = await tx.user.create({
+      const user = await prisma.user.create({
         data: {
           name,
           email,
@@ -49,9 +49,10 @@ export async function POST(req: Request) {
           }
         }
       })
+      console.log("User created successfully:", user.id)
 
       // Then create business with the user's ID
-      const business = await tx.business.create({
+      const business = await prisma.business.create({
         data: {
           name: businessName,
           industry: "Other",
@@ -59,27 +60,24 @@ export async function POST(req: Request) {
           userId: user.id
         }
       })
+      console.log("Business created successfully:", business.id)
 
-      return { user, business }
-    })
+      return NextResponse.json({
+        success: true,
+        message: "Registration successful",
+        isNewUser: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          businessName: business.name
+        }
+      }, { status: 201 })
 
-    console.log("User and business created successfully:", { 
-      userId: result.user.id, 
-      email: result.user.email,
-      businessId: result.business.id 
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "Registration successful",
-      isNewUser: true,
-      user: {
-        id: result.user.id,
-        name: result.user.name,
-        email: result.user.email,
-        businessName: result.business.name
-      }
-    }, { status: 201 })
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      throw dbError
+    }
 
   } catch (error) {
     console.error("Registration error:", error)

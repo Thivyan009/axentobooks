@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { categorizeTransaction, updateFinancialPosition } from "@/lib/actions/reports"
 import { auth } from "@/lib/auth"
 import { analyzeTransaction, updateFinancialStatements } from "@/lib/actions/transaction-analysis"

@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import prisma from "@/lib/prisma"
+import { prisma } from '@/lib/prisma'
 import { NextResponse } from "next/server"
 
 export const maxDuration = 10 // Set max duration to 10 seconds

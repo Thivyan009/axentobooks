@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppearanceForm } from "@/components/settings/appearance-form"
 import { NotificationsForm } from "@/components/settings/notifications-form"
-import { CurrencySettings } from "@/components/settings/currency-settings"
+import { CurrencyForm } from "@/components/settings/currency-form"
 import { AccountForm } from "@/components/settings/account-form"
 import { BillingForm } from "@/components/settings/billing-form"
 import { SecurityForm } from "@/components/settings/security-form"
@@ -47,7 +47,7 @@ export function SettingsContent() {
           <SecurityForm />
         </TabsContent>
         <TabsContent value="currency" className="space-y-6">
-          <CurrencySettings />
+          <CurrencyForm />
         </TabsContent>
         <TabsContent value="financial" className="space-y-6">
           <FinancialInfo />
