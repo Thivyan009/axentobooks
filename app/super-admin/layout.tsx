@@ -4,9 +4,8 @@ import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Shield, Loader2 } from "lucide-react"
-import { Sidebar } from "@/components/admin/sidebar"
 
-export default function AdminLayout({
+export default function SuperAdminLayout({
   children,
 }: {
   children: React.ReactNode
@@ -39,12 +38,5 @@ export default function AdminLayout({
     return null
   }
 
-  return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8">
-        {children}
-      </main>
-    </div>
-  )
+  return <>{children}</>
 } 

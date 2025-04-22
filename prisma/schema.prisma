@@ -8,22 +8,24 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  bio           String?
-  company       String?
-  image         String?
-  role          String?
-  resetToken    String?
+  id               String         @id @default(cuid())
+  name             String
+  email            String         @unique
+  password         String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  bio              String?
+  company          String?
+  image            String?
+  role             String?
+  resetToken       String?
   resetTokenExpiry DateTime?
-  notifications Notification[]
-  reports       Report[]
-  business      Business?
-  settings      UserSettings?
+  isActive         Boolean        @default(true)
+  lastLoginAt      DateTime?
+  notifications    Notification[]
+  reports          Report[]
+  business         Business?
+  settings         UserSettings?
 
   @@map("users")
 }
@@ -45,12 +47,12 @@ model Business {
   assets                    Asset[]
   bankStatements            BankStatement[]
   user                      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customers                 Customer[]
   equityDetails             EquityDetail[]
   financialGoals            FinancialGoal[]
+  invoices                  Invoice[]
   liabilities               Liability[]
   transactions              Transaction[]
-  customers                 Customer[]
-  invoices                  Invoice[]
 
   @@map("businesses")
 }
@@ -257,50 +259,50 @@ model BankStatementTransaction {
 }
 
 model Customer {
-  id          String    @id @default(cuid())
-  name        String
-  email       String
-  phone       String?
-  address     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  invoices    Invoice[]
+  id         String    @id @default(cuid())
+  name       String
+  email      String
+  phone      String?
+  address    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoices   Invoice[]
 
   @@map("customers")
 }
 
 model Invoice {
-  id            String    @id @default(cuid())
-  invoiceNumber String    @unique
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
   issueDate     DateTime
   dueDate       DateTime
-  status        String    @default("DUE") // DUE, PAID
+  status        String        @default("DUE")
   subtotal      Float
-  tax           Float     @default(0)
+  tax           Float         @default(0)
   total         Float
   notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   businessId    String
   customerId    String
-  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items         InvoiceItem[]
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@map("invoices")
 }
 
 model InvoiceItem {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   quantity    Int
   rate        Float
   amount      Float
   invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_items")
 }

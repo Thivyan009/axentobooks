@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server"
+import { hash } from "bcrypt"
 import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+import { z } from "zod"
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+})
 
 export async function POST(req: Request) {
   try {
-    const { token, password } = await req.json()
+    const json = await req.json()
+    const body = resetPasswordSchema.parse(json)
 
-    if (!token || !password) {
-      return NextResponse.json(
-        { error: "Token and password are required" },
-        { status: 400 }
-      )
-    }
-
-    // Find user with valid reset token
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: body.token,
         resetTokenExpiry: {
           gt: new Date(),
         },
@@ -24,16 +23,11 @@ export async function POST(req: Request) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid or expired reset token" },
-        { status: 400 }
-      )
+      return new NextResponse("Invalid or expired reset token", { status: 400 })
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await hash(body.password, 10)
 
-    // Update user's password and clear reset token
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -43,16 +37,12 @@ export async function POST(req: Request) {
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Password has been reset successfully",
-    })
-
+    return new NextResponse("Password reset successful", { status: 200 })
   } catch (error) {
-    console.error("Password reset error:", error)
-    return NextResponse.json(
-      { error: "Failed to reset password" },
-      { status: 500 }
-    )
+    if (error instanceof z.ZodError) {
+      return new NextResponse(error.errors[0].message, { status: 422 })
+    }
+
+    return new NextResponse("Something went wrong", { status: 500 })
   }
 } 

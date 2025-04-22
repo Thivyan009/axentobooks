@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from "next-auth"
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
+import { compare } from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 
 if (!process.env.NEXTAUTH_SECRET) {
@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
 
           console.log('User found, verifying password');
           
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = await compare(credentials.password, user.password);
 
           if (!isValid) {
             console.log('Invalid password for user:', credentials.email);

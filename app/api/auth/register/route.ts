@@ -1,5 +1,5 @@
+import { hash } from "bcrypt"
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     // Create user and business
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await hash(password, 10)
     
     try {
       // Create user first
